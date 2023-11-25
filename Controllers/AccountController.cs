@@ -20,13 +20,7 @@ public class AccountController : Controller
 		authService = _authService;
 		_phrase = phrase;
 	}
-
-	//	[Authorize(Roles = "User")]
-	public IActionResult Index()
-	{
-		return Content(_phrase["Account", "NotFoundMessage", "Hello bedo"]);
-	}
-
+	
 	[HttpGet]
 	[AllowAnonymous]
 	[AnonymousOnly]
