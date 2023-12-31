@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Rocky.BLL.Constants;
+using Rocky.BLL.Helpers;
 using Rocky.DAL.Data;
 using Rocky.DAL.Models;
+using Rocky.Utility;
 using Rocky.ViewModels;
 using System.Diagnostics;
 
@@ -34,19 +37,80 @@ public class HomeController : Controller
 
 	public IActionResult Details(int id)
 	{
-		//exist in cart default is false;
+
+        List<ShoppingCart> shoppingCartList = new List<ShoppingCart>();
+        if (HttpContext.Session.Get<IEnumerable<ShoppingCart>>(AppSettings.ProductView.SessionCart) != null
+            && HttpContext.Session.Get<IEnumerable<ShoppingCart>>(AppSettings.ProductView.SessionCart).Count() > 0)
+        {
+            shoppingCartList = HttpContext.Session.Get<List<ShoppingCart>>(AppSettings.ProductView.SessionCart);
+        }
+
+        //exist in cart default is false;
+
+        var product=_db.Products.Include(_x=>_x.Category).Where(p => p.Id == id).FirstOrDefault(); 
+		
+		if (product == null) return BadRequest();
 
 		DetailsViewModel detailsViewModel = new DetailsViewModel()
 		{
-			Product = _db.Products?.Include(_x => _x.Category)?.Where(i => i.Id == id)?.FirstOrDefault(),
+			Product = product,
 			ExistsInCart = false,
 		};
 
-		return View();
+        foreach (var item in shoppingCartList)
+        {
+            if (item.ProductId == id)
+            {
+                detailsViewModel.ExistsInCart = true;
+            }
+        }
+
+        return View(detailsViewModel);
 
 	}
 
-	public IActionResult Privacy()
+    [HttpPost, ActionName("Details")]
+    public IActionResult DetailsPost(int id)
+    {
+        List<ShoppingCart> shoppingCartList = new List<ShoppingCart>();
+        if (HttpContext.Session.Get<IEnumerable<ShoppingCart>>(AppSettings.ProductView.SessionCart) != null
+            && HttpContext.Session.Get<IEnumerable<ShoppingCart>>(AppSettings.ProductView.SessionCart).Count() > 0)
+        {
+            shoppingCartList = HttpContext.Session.Get<List<ShoppingCart>>(AppSettings.ProductView.SessionCart);
+        }
+        shoppingCartList.Add(new ShoppingCart { ProductId = id });
+        HttpContext.Session.Set(AppSettings.ProductView.SessionCart, shoppingCartList);
+        return RedirectToAction(nameof(Index));
+
+
+     
+
+    }
+
+
+    public IActionResult RemoveFromCart(int id)
+    {
+        List<ShoppingCart> shoppingCartList = new List<ShoppingCart>();
+        if (HttpContext.Session.Get<IEnumerable<ShoppingCart>>(AppSettings.ProductView.SessionCart) != null
+            && HttpContext.Session.Get<IEnumerable<ShoppingCart>>(AppSettings.ProductView.SessionCart).Count() > 0)
+        {
+            shoppingCartList = HttpContext.Session.Get<List<ShoppingCart>>(AppSettings.ProductView.SessionCart);
+        }
+
+        var itemToRemove = shoppingCartList.SingleOrDefault(r => r.ProductId == id);
+        if (itemToRemove != null)
+        {
+            shoppingCartList.Remove(itemToRemove);
+        }
+
+        HttpContext.Session.Set(AppSettings.ProductView.SessionCart, shoppingCartList);
+        return RedirectToAction(nameof(Index));
+    }
+
+
+
+
+    public IActionResult Privacy()
 	{
 		return View();
 	}
@@ -98,5 +162,8 @@ public class HomeController : Controller
 
 		return Json(filteredProducts);
 	}
+
+
+
 
 }

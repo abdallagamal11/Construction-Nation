@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Rocky.BLL.Constants;
 using Rocky.BLL.Helpers;
@@ -98,8 +99,13 @@ builder.Services.AddSingleton<Phrase>();
 
 #endregion
 
-builder.Services.AddTransient<CommonHelpers>();
+builder.Services.AddScoped<CommonHelpers>();
+builder.Services.AddSession(Options => {
+	Options.IdleTimeout = TimeSpan.FromMinutes(10); 
+	Options.Cookie.HttpOnly = true;
+	Options.Cookie.IsEssential = true;	
 
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -111,6 +117,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -123,6 +130,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 #endregion
+app.UseSession();
+
 
 app.MapControllerRoute(
 	name: "default",
